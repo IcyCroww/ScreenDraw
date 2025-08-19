@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "screendraw",
+  "version": "${version}",
+  "name": "ScreenDraw",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/screendraw/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "me.IcyCrow.customSound.screendraw.client.ScreendrawClient"
+    ],
+    "main": [
+      "me.IcyCrow.customSound.screendraw.Screendraw"
+    ]
+  },
+  "mixins": [
+    "screendraw.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
