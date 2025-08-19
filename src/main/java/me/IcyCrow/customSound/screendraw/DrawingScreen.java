@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Stack;
 
 public class DrawingScreen extends Screen {
-//sdfsfs
+
     // Список точек для рисования
     private List<DrawPoint> drawPoints = new ArrayList<>();
 
