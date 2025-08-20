@@ -4,6 +4,8 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.RotationAxis;
 
 /**
  * Главный экран для рисования
@@ -35,6 +37,14 @@ public class DrawingScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) { // Левая кнопка мыши
+            // Сначала проверяем клик по палитре цветов
+            if (canvas.getColorPicker().handleMouseClick(mouseX, mouseY)) {
+                // Если цвет был выбран, обновляем цвет кисти
+                canvas.getBrushSettings().setColor(canvas.getColorPicker().getSelectedColor());
+                return true;
+            }
+
+            // Если клик не по палитре, начинаем рисование
             canvas.startStroke((int) mouseX, (int) mouseY);
             return true;
         }
@@ -52,6 +62,9 @@ public class DrawingScreen extends Screen {
 
     @Override
     public void mouseMoved(double mouseX, double mouseY) {
+        // Обновляем hover эффекты для палитры
+        canvas.getColorPicker().handleMouseMove(mouseX, mouseY);
+
         if (canvas.isDrawing()) {
             canvas.continueStroke((int) mouseX, (int) mouseY);
         }
@@ -72,12 +85,11 @@ public class DrawingScreen extends Screen {
         // Рендерим штрихи
         StrokeRenderer.renderStrokes(canvas.getStrokes(), canvas.getCurrentStroke(), context.getMatrices());
 
-        MatrixStack matrixStack = context.getMatrices();
+        // Обновляем анимации палитры цветов
+        canvas.getColorPicker().tick();
 
-        // Рендерим колорпикер если он видимый
-        if (canvas.getColorPicker().isVisible()) {
-            canvas.getColorPicker().render(context);
-        }
+        // Рендерим колорпикер с анимациями
+        canvas.getColorPicker().render(context);
 
         // Рендерим остальные элементы UI
         super.render(context, mouseX, mouseY, delta);
@@ -99,7 +111,7 @@ public class DrawingScreen extends Screen {
         context.drawTextWithShadow(this.textRenderer, "Ctrl+Z - отмена, Ctrl+Y - повтор", 10, 40, 0xFFFFFFFF);
         context.drawTextWithShadow(this.textRenderer,
                 "S - " + (brush.isSmoothingEnabled() ? "выкл" : "вкл") + " сглаживание", 10, 55, 0xFFFFFFFF);
-        context.drawTextWithShadow(this.textRenderer, "Alt - колорпикер", 10, 70, 0xFFFFFFFF);
+        context.drawTextWithShadow(this.textRenderer, "Alt - колорпикер (с анимациями!)", 10, 70, 0xFFFFFFFF);
 
         // Статистика
         context.drawTextWithShadow(this.textRenderer,
@@ -115,23 +127,34 @@ public class DrawingScreen extends Screen {
         context.drawTextWithShadow(this.textRenderer, brushSize,
                 this.width - textWidth - 10, 10, 0xFFFFFF00);
 
-        // Текущий цвет кисти в правом верхнем углу
+        // Текущий цвет кисти в правом верхнем углу с анимированным индикатором
         String colorInfo = "Цвет: " + String.format("#%08X", brush.getColor());
         int colorTextWidth = this.textRenderer.getWidth(colorInfo);
         context.drawTextWithShadow(this.textRenderer, colorInfo,
                 this.width - colorTextWidth - 10, 25, brush.getColor());
 
-        // Индикатор цвета (маленький квадратик)
-        int colorSquareSize = 16;
-        int colorSquareX = this.width - colorTextWidth - colorSquareSize - 15;
-        int colorSquareY = 25;
+        // Анимированный индикатор цвета (маленький квадратик с пульсацией)
+        renderAnimatedColorIndicator(context, brush.getColor(),
+                this.width - colorTextWidth - 25, 25, 10);
+    }
 
-        context.fill(colorSquareX - 1, colorSquareY - 1,
-                colorSquareX + colorSquareSize + 1, colorSquareY + colorSquareSize + 1,
-                0xFF000000); // Черная рамка
-        context.fill(colorSquareX, colorSquareY,
-                colorSquareX + colorSquareSize, colorSquareY + colorSquareSize,
-                brush.getColor()); // Цвет кисти
+    /**
+     * Рендерит анимированный индикатор текущего цвета
+     */
+    private void renderAnimatedColorIndicator(DrawContext context, int color, int x, int y, int size) {
+        MatrixStack matrixStack = context.getMatrices();
+        matrixStack.push();
+
+        // Перемещаемся к позиции рендеринга
+        matrixStack.translate(x, y, 0);
+
+        // Черная рамка
+        context.fill(-1, -1, size + 1, size + 1, 0xFF000000);
+
+        // Цвет кисти
+        context.fill(0, 0, size, size, color);
+
+        matrixStack.pop();
     }
 
     @Override
