@@ -1,4 +1,4 @@
-package me.IcyCrow.customSound.screendraw;
+package me.IcyCrow.customSound.screendraw.drawing;
 
 /**
  * Класс для управления настройками кисти
@@ -38,19 +38,37 @@ public class BrushSettings {
     }
 
     // Getters
-    public float getLineWidth() { return lineWidth; }
-    public int getColor() { return color; }
-    public boolean isSmoothingEnabled() { return smoothingEnabled; }
+    public float getLineWidth() {
+        return lineWidth;
+    }
+
+    public int getColor() {
+        return color;
+    }
+
+    public boolean isSmoothingEnabled() {
+        return smoothingEnabled;
+    }
 
     // Setters
     public void setLineWidth(float lineWidth) {
         this.lineWidth = Math.max(MIN_LINE_WIDTH, Math.min(MAX_LINE_WIDTH, lineWidth));
     }
 
-    public void setColor(int color) { this.color = color; }
-    public void setSmoothingEnabled(boolean smoothingEnabled) { this.smoothingEnabled = smoothingEnabled; }
+    public void setColor(int color) {
+        this.color = color;
+    }
+
+    public void setSmoothingEnabled(boolean smoothingEnabled) {
+        this.smoothingEnabled = smoothingEnabled;
+    }
 
     // Constants getters
-    public static float getMinLineWidth() { return MIN_LINE_WIDTH; }
-    public static float getMaxLineWidth() { return MAX_LINE_WIDTH; }
+    public static float getMinLineWidth() {
+        return MIN_LINE_WIDTH;
+    }
+
+    public static float getMaxLineWidth() {
+        return MAX_LINE_WIDTH;
+    }
 }
