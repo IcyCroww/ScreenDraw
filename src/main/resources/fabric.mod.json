@@ -11,10 +11,7 @@
   "environment": "client",
   "entrypoints": {
     "client": [
-      "me.IcyCrow.customSound.screendraw.client.ScreendrawClient"
-    ],
-    "main": [
-      "me.IcyCrow.customSound.screendraw.Screendraw"
+      "me.IcyCrow.customSound.screendraw.client.ScreenDrawClient"
     ]
   },
   "mixins": [

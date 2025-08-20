@@ -9,7 +9,7 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import org.lwjgl.glfw.GLFW;
 
-public class ScreendrawClient implements ClientModInitializer {
+public class ScreenDrawClient implements ClientModInitializer {
 
     // Создаем кейбинд для открытия экрана рисования
     private static KeyBinding openDrawingScreenKey;
