@@ -1,4 +1,4 @@
-package me.IcyCrow.customSound.screendraw;
+package me.IcyCrow.customSound.screendraw.drawing;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,26 +12,35 @@ public class DrawingCanvas {
     private final List<Point> currentBezierPoints;
     private final DrawingHistory history;
     private final BrushSettings brushSettings;
+    private ColorPicker colorPicker; // больше не final
 
-    // Состояние рисования
     private boolean isDrawing;
     private int lastMouseX = -1;
     private int lastMouseY = -1;
 
-    public DrawingCanvas() {
+    public DrawingCanvas(int screenWidth, int screenHeight) {
         this.strokes = new ArrayList<>();
         this.currentStroke = null;
         this.currentBezierPoints = new ArrayList<>();
         this.history = new DrawingHistory();
         this.brushSettings = new BrushSettings();
+        // Инициализируем палитру. Если screenWidth/height == 0, позицию можно обновить позже через updateColorPickerPosition().
+        this.colorPicker = new ColorPicker(screenWidth / 2, screenHeight / 2);
         this.isDrawing = false;
     }
 
-    /**
-     * Начинает новый штрих
-     */
     public void startStroke(int mouseX, int mouseY) {
-        if (!isDrawing) {
+        if (colorPicker.isVisible() && colorPicker.handleMouseClick(mouseX, mouseY)) {
+            brushSettings.setColor(colorPicker.getSelectedColor());
+            return;
+        }
+
+        if (colorPicker.isVisible() && !colorPicker.isPointInside(mouseX, mouseY)) {
+            colorPicker.hide();
+            return;
+        }
+
+        if (!isDrawing && !colorPicker.isVisible()) {
             history.saveState(strokes);
 
             isDrawing = true;
@@ -42,21 +51,16 @@ public class DrawingCanvas {
             currentBezierPoints.clear();
             currentBezierPoints.add(new Point(mouseX, mouseY));
 
-            // Добавляем первую точку
             currentStroke.addPoint(new DrawPoint(mouseX, mouseY,
                     brushSettings.getColor(),
                     brushSettings.getLineWidth()));
         }
     }
 
-    /**
-     * Продолжает текущий штрих
-     */
     public void continueStroke(int mouseX, int mouseY) {
-        if (isDrawing && currentStroke != null) {
+        if (isDrawing && currentStroke != null && !colorPicker.isVisible()) {
             currentBezierPoints.add(new Point(mouseX, mouseY));
 
-            // Добавляем интерполированные точки между позициями мыши
             if (lastMouseX != -1 && lastMouseY != -1) {
                 List<DrawPoint> interpolatedPoints = Stroke.interpolatePoints(
                         lastMouseX, lastMouseY, mouseX, mouseY,
@@ -70,19 +74,15 @@ public class DrawingCanvas {
         }
     }
 
-    /**
-     * Завершает текущий штрих
-     */
     public void endStroke() {
         if (isDrawing && currentStroke != null) {
             isDrawing = false;
 
-            // Применяем сглаживание если включено
             if (brushSettings.isSmoothingEnabled() && currentBezierPoints.size() > 2) {
-                currentStroke = BezierSmoother.smoothStroke(currentBezierPoints, brushSettings);
+                Stroke smoothedStroke = BezierSmoother.smoothStroke(currentBezierPoints, brushSettings);
+                currentStroke = smoothedStroke;
             }
 
-            // Сохраняем завершенный штрих
             if (!currentStroke.isEmpty()) {
                 currentStroke.complete();
                 strokes.add(currentStroke);
@@ -95,27 +95,31 @@ public class DrawingCanvas {
         }
     }
 
-    /**
-     * Отменяет последнее действие
-     */
+    public void toggleColorPicker() { colorPicker.toggle(); }
+
+    // Исправлено: теперь действительно обновляем позицию существующей палитры
+    public void updateColorPickerPosition(int screenWidth, int screenHeight) {
+        int cx = screenWidth / 2;
+        int cy = screenHeight / 2;
+        if (colorPicker == null) {
+            colorPicker = new ColorPicker(cx, cy);
+        } else {
+            colorPicker.setPosition(cx, cy);
+        }
+    }
+
     public void undo() {
         List<Stroke> newStrokes = history.undo(strokes);
         strokes.clear();
         strokes.addAll(newStrokes);
     }
 
-    /**
-     * Повторяет отмененное действие
-     */
     public void redo() {
         List<Stroke> newStrokes = history.redo(strokes);
         strokes.clear();
         strokes.addAll(newStrokes);
     }
 
-    /**
-     * Очищает холст
-     */
     public void clear() {
         history.saveState(strokes);
         strokes.clear();
@@ -124,23 +128,14 @@ public class DrawingCanvas {
         }
     }
 
-    /**
-     * Изменяет размер кисти
-     */
     public boolean adjustBrushSize(float delta) {
         return brushSettings.adjustSize(delta);
     }
 
-    /**
-     * Переключает сглаживание
-     */
     public void toggleSmoothing() {
         brushSettings.toggleSmoothing();
     }
 
-    /**
-     * Подсчитывает общее количество точек
-     */
     public int getTotalPointCount() {
         int total = 0;
         for (Stroke stroke : strokes) {
@@ -152,11 +147,11 @@ public class DrawingCanvas {
         return total;
     }
 
-    // Getters
     public List<Stroke> getStrokes() { return strokes; }
     public Stroke getCurrentStroke() { return currentStroke; }
     public BrushSettings getBrushSettings() { return brushSettings; }
     public DrawingHistory getHistory() { return history; }
+    public ColorPicker getColorPicker() { return colorPicker; }
     public boolean isDrawing() { return isDrawing; }
     public int getStrokeCount() { return strokes.size(); }
 }

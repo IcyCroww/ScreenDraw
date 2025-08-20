@@ -1,4 +1,4 @@
-package me.IcyCrow.customSound.screendraw;
+package me.IcyCrow.customSound.screendraw.drawing;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gl.ShaderProgramKeys;
