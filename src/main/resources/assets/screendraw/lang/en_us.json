@@ -1,0 +1,14 @@
+{
+  "category.screendraw.general" : "Screen Draw",
+  "key.screendraw.open_drawing" : "Open screen for drawing",
+  "gui.screendraw.undo_redo" : "Ctrl+Z - undo, Ctrl+Y Redo",
+  "gui.screendraw.smoothing" : "S - %s Smoothing",
+  "gui.screendraw.off" : "off",
+  "gui.screendraw.on" : "on",
+  "gui.screendraw.button_draw" : "Hold down the left mouse button to draw",
+  "gui.screendraw.button_ESC_C" : "ESC - exit, C - clean",
+  "gui.screendraw.alt" : "Alt - colour picker",
+  "gui.screendraw.brush size" : "Mouse wheel - brush size: %s",
+  "gui.screendraw.brush_size": "Brush: %s",
+  "gui.screendraw.brush_color": "Color: %s"
+}

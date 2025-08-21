@@ -1,0 +1,14 @@
+{
+  "category.screendraw.general" : "Screen Draw",
+  "key.screendraw.open_drawing" : "Откпыть экран для рисования",
+  "gui.screendraw.undo_redo" : "Ctrl+Z - отмена, Ctrl+Y - повтор",
+  "gui.screendraw.smoothing" : "S - %s сглаживание",
+  "gui.screendraw.off" : "выкл",
+  "gui.screendraw.on" : "вкл",
+  "gui.screendraw.button_draw" : "Удерживайте ЛКМ чтобы рисовать",
+  "gui.screendraw.button_ESC_C" : "ESC - выход, C - очистить",
+  "gui.screendraw.alt" : "Alt - выбор цвета",
+  "gui.screendraw.brush_size": "Колёсико мыши — размер кисти: %s",
+  "gui.screendraw.brush_size": "Кисть: %s",
+  "gui.screendraw.brush_color": "Цвет: %s"
+}

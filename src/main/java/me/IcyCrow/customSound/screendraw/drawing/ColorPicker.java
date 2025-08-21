@@ -7,9 +7,6 @@ import net.minecraft.util.math.RotationAxis;
 
 import java.util.Arrays;
 
-/**
- * HUE колесо-колорпикер
- */
 public class ColorPicker {
     private int centerX;
     private int centerY;
@@ -20,21 +17,17 @@ public class ColorPicker {
     private int selectedColor;
     private int selectedIndex;
 
-    // Анимация показа/скрытия палитры
     private boolean shouldShow = false;
     private float showAnimation = 0.0f;
     private static final int SHOW_ANIMATION_DURATION = 8; // тиков
 
-    // Анимация выбора цвета
     private float selectionAnimation = 0.0f;
     private static final int SELECTION_ANIMATION_DURATION = 10; // тиков
 
-    // Hover анимация
     private int hoveredIndex = -1;
     private float[] hoverAnimations = new float[PALETTE_COLORS.length];
     private static final int HOVER_ANIMATION_DURATION = 6; // тиков
 
-    // Пульсация выбранного цвета
     private float pulseAnimation = 0.0f;
 
     private static final int[] PALETTE_COLORS = {
@@ -60,7 +53,6 @@ public class ColorPicker {
         this.selectedIndex = -1;
     }
 
-    // Позволяет обновить позицию палитры
     public void setPosition(int centerX, int centerY) {
         this.centerX = centerX;
         this.centerY = centerY;
@@ -82,9 +74,7 @@ public class ColorPicker {
         shouldShow = false;
     }
 
-    // Обновление анимаций - вызывать каждый тик
     public void tick() {
-        // Анимация показа/скрытия
         if (shouldShow && showAnimation < 1.0f) {
             showAnimation = Math.min(1.0f, showAnimation + 1.0f / SHOW_ANIMATION_DURATION);
             if (showAnimation >= 1.0f) {
@@ -97,12 +87,10 @@ public class ColorPicker {
             }
         }
 
-        // Анимация выбора цвета
         if (selectionAnimation > 0.0f) {
             selectionAnimation = Math.max(0.0f, selectionAnimation - 1.0f / SELECTION_ANIMATION_DURATION);
         }
 
-        // Hover анимации
         for (int i = 0; i < hoverAnimations.length; i++) {
             if (i == hoveredIndex && hoverAnimations[i] < 1.0f) {
                 hoverAnimations[i] = Math.min(1.0f, hoverAnimations[i] + 1.0f / HOVER_ANIMATION_DURATION);
@@ -111,14 +99,12 @@ public class ColorPicker {
             }
         }
 
-        // Пульсация выбранного цвета
         pulseAnimation += 0.15f;
         if (pulseAnimation > 2 * Math.PI) {
             pulseAnimation -= 2 * Math.PI;
         }
     }
 
-    // Обработка hover эффекта
     public void handleMouseMove(double mouseX, double mouseY) {
         if (!isVisible()) {
             hoveredIndex = -1;
@@ -157,7 +143,7 @@ public class ColorPicker {
                     mouseY >= y && mouseY <= y + squareSize) {
                 selectedColor = PALETTE_COLORS[i];
                 selectedIndex = i;
-                selectionAnimation = 1.0f; // Запускаем анимацию выбора
+                selectionAnimation = 1.0f;
                 return true;
             }
         }
@@ -171,15 +157,12 @@ public class ColorPicker {
 
         matrixStack.push();
 
-        // Перемещаемся в центр палитры
         matrixStack.translate(centerX, centerY, 0);
 
-        // Анимация появления/исчезновения палитры
         float showProgress = smoothStep(showAnimation);
         float scale = 0.3f + 0.7f * showProgress;
         matrixStack.scale(scale, scale, 1.0f);
 
-        // Возвращаемся к исходной позиции для рендеринга
         matrixStack.translate(-centerX, -centerY, 0);
 
         for (int i = 0; i < PALETTE_COLORS.length; i++) {
@@ -192,20 +175,16 @@ public class ColorPicker {
             int y = (int) Math.round(cy - squareSize / 2.0);
             int color = PALETTE_COLORS[i];
 
-            // Перемещаемся к позиции цветного квадрата
             matrixStack.translate(cx, cy, 0);
 
-            // Hover анимация
             float hoverProgress = smoothStep(hoverAnimations[i]);
             float hoverScale = 1.0f + 0.2f * hoverProgress;
 
-            // Анимация выбора цвета
             float selectionScale = 1.0f;
             if (i == selectedIndex) {
                 float selectionProgress = smoothStep(selectionAnimation);
                 selectionScale = 1.0f + 0.4f * selectionProgress;
 
-                // Пульсация выбранного цвета
                 float pulse = (float) Math.sin(pulseAnimation) * 0.1f + 1.0f;
                 selectionScale *= pulse;
             }
@@ -213,16 +192,13 @@ public class ColorPicker {
             float totalScale = hoverScale * selectionScale;
             matrixStack.scale(totalScale, totalScale, 1.0f);
 
-            // Возвращаемся к левому верхнему углу квадрата
             matrixStack.translate(-squareSize / 2.0, -squareSize / 2.0, 0);
 
-            // Рендерим обводку для выбранного цвета
             if (i == selectedIndex) {
                 int pad = 3;
                 fillRect(context, -pad, -pad, squareSize + pad * 2, squareSize + pad * 2, 0xFFFFFFFF);
             }
 
-            // Рендерим hover обводку
             if (hoverProgress > 0.0f) {
                 int hoverAlpha = (int) (255 * hoverProgress * 0.6f);
                 int hoverColor = (hoverAlpha << 24) | 0x00FFFFFF;
@@ -230,10 +206,8 @@ public class ColorPicker {
                 fillRect(context, -hoverPad, -hoverPad, squareSize + hoverPad * 2, squareSize + hoverPad * 2, hoverColor);
             }
 
-            // Рендерим основной цветной квадрат
             fillRect(context, 0, 0, squareSize, squareSize, color);
 
-            // Черная обводка
             context.drawBorder(0, 0, squareSize, squareSize, 0xFF000000);
 
             matrixStack.pop();
@@ -246,7 +220,6 @@ public class ColorPicker {
         ctx.fill(x, y, x + w, y + h, argb);
     }
 
-    // Smooth step интерполяция: f(x) = 3x² - 2x³
     private static float smoothStep(float x) {
         if (x <= 0.0f) return 0.0f;
         if (x >= 1.0f) return 1.0f;

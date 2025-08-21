@@ -1,8 +1,5 @@
 package me.IcyCrow.customSound.screendraw.drawing;
 
-/**
- * Класс для управления настройками кисти
- */
 public class BrushSettings {
     private float lineWidth;
     private int color;
@@ -25,7 +22,6 @@ public class BrushSettings {
         this.smoothingEnabled = smoothingEnabled;
     }
 
-    // Изменение размера кисти
     public boolean adjustSize(float delta) {
         float oldLineWidth = lineWidth;
         lineWidth += delta;
@@ -37,7 +33,6 @@ public class BrushSettings {
         smoothingEnabled = !smoothingEnabled;
     }
 
-    // Getters
     public float getLineWidth() {
         return lineWidth;
     }
@@ -50,7 +45,6 @@ public class BrushSettings {
         return smoothingEnabled;
     }
 
-    // Setters
     public void setLineWidth(float lineWidth) {
         this.lineWidth = Math.max(MIN_LINE_WIDTH, Math.min(MAX_LINE_WIDTH, lineWidth));
     }
@@ -63,7 +57,6 @@ public class BrushSettings {
         this.smoothingEnabled = smoothingEnabled;
     }
 
-    // Constants getters
     public static float getMinLineWidth() {
         return MIN_LINE_WIDTH;
     }

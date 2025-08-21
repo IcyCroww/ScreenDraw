@@ -3,9 +3,6 @@ package me.IcyCrow.customSound.screendraw.drawing;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Класс представляющий холст для рисования
- */
 public class DrawingCanvas {
     private final List<Stroke> strokes;
     private Stroke currentStroke;
@@ -24,7 +21,6 @@ public class DrawingCanvas {
         this.currentBezierPoints = new ArrayList<>();
         this.history = new DrawingHistory();
         this.brushSettings = new BrushSettings();
-        // Инициализируем палитру. Если screenWidth/height == 0, позицию можно обновить позже через updateColorPickerPosition().
         this.colorPicker = new ColorPicker(screenWidth / 2, screenHeight / 2);
         this.isDrawing = false;
     }
@@ -97,7 +93,6 @@ public class DrawingCanvas {
 
     public void toggleColorPicker() { colorPicker.toggle(); }
 
-    // Исправлено: теперь действительно обновляем позицию существующей палитры
     public void updateColorPickerPosition(int screenWidth, int screenHeight) {
         int cx = screenWidth / 2;
         int cy = screenHeight / 2;

@@ -7,17 +7,13 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
 
-/**
- * Главный экран для рисования
- * Следует принципу Single Responsibility - только управление UI и делегирование действий
- */
+
 public class DrawingScreen extends Screen {
 
     private final DrawingCanvas canvas;
 
     public DrawingScreen() {
         super(Text.of("Drawing Screen"));
-        // Создаем canvas с размерами по умолчанию, обновим в init()
         this.canvas = new DrawingCanvas(width, height);
     }
 
@@ -36,15 +32,12 @@ public class DrawingScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) { // Левая кнопка мыши
-            // Сначала проверяем клик по палитре цветов
+        if (button == 0) {
             if (canvas.getColorPicker().handleMouseClick(mouseX, mouseY)) {
-                // Если цвет был выбран, обновляем цвет кисти
                 canvas.getBrushSettings().setColor(canvas.getColorPicker().getSelectedColor());
                 return true;
             }
 
-            // Если клик не по палитре, начинаем рисование
             canvas.startStroke((int) mouseX, (int) mouseY);
             return true;
         }
@@ -53,7 +46,7 @@ public class DrawingScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0) { // Левая кнопка мыши
+        if (button == 0) {
             canvas.endStroke();
             return true;
         }
@@ -62,7 +55,6 @@ public class DrawingScreen extends Screen {
 
     @Override
     public void mouseMoved(double mouseX, double mouseY) {
-        // Обновляем hover эффекты для палитры
         canvas.getColorPicker().handleMouseMove(mouseX, mouseY);
 
         if (canvas.isDrawing()) {
@@ -74,7 +66,6 @@ public class DrawingScreen extends Screen {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         if (verticalAmount != 0) {
-            // Изменяем размер кисти колесиком мыши
             return canvas.adjustBrushSize((float) verticalAmount * 0.5f);
         }
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
@@ -82,76 +73,86 @@ public class DrawingScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Рендерим штрихи
         StrokeRenderer.renderStrokes(canvas.getStrokes(), canvas.getCurrentStroke(), context.getMatrices());
 
-        // Обновляем анимации палитры цветов
         canvas.getColorPicker().tick();
 
-        // Рендерим колорпикер с анимациями
         canvas.getColorPicker().render(context);
 
-        // Рендерим остальные элементы UI
         super.render(context, mouseX, mouseY, delta);
 
-        // Рендерим UI информацию
+
         renderUI(context);
     }
 
-    /**
-     * Рендерит пользовательский интерфейс
-     */
     private void renderUI(DrawContext context) {
         BrushSettings brush = canvas.getBrushSettings();
         DrawingHistory history = canvas.getHistory();
 
-        // Инструкции
-        context.drawTextWithShadow(this.textRenderer, "Зажми ЛКМ для рисования", 10, 10, 0xFFFFFFFF);
-        context.drawTextWithShadow(this.textRenderer, "ESC - выход, C - очистить", 10, 25, 0xFFFFFFFF);
-        context.drawTextWithShadow(this.textRenderer, "Ctrl+Z - отмена, Ctrl+Y - повтор", 10, 40, 0xFFFFFFFF);
-        context.drawTextWithShadow(this.textRenderer,
-                "S - " + (brush.isSmoothingEnabled() ? "выкл" : "вкл") + " сглаживание", 10, 55, 0xFFFFFFFF);
-        context.drawTextWithShadow(this.textRenderer, "Alt - колорпикер (с анимациями!)", 10, 70, 0xFFFFFFFF);
+        context.drawTextWithShadow(this.textRenderer,Text.translatable("gui.screendraw.button_draw"), 10, 10, 0xFFFFFFFF);
+        context.drawTextWithShadow(this.textRenderer,Text.translatable("gui.screendraw.button_ESC_C"), 10, 25, 0xFFFFFFFF);
+        context.drawTextWithShadow(this.textRenderer,Text.translatable("gui.screendraw.undo_redo"), 10, 40, 0xFFFFFFFF);
+        context.drawTextWithShadow( //"S - " + (brush.isSmoothingEnabled() ? "выкл" : "вкл") + " сглаживание"
+                this.textRenderer,
+                Text.translatable(
+                        "gui.screendraw.smoothing",
+                        Text.translatable(brush.isSmoothingEnabled() ? "gui.screendraw.off" : "gui.screendraw.on")
+                ),
+                10, 55, 0xFFFFFFFF
+        );
 
-        // Статистика
-        context.drawTextWithShadow(this.textRenderer,
-                "История: " + history.getUndoHistorySize() + "/" + history.getMaxHistorySize(), 10, 90, 0xFFAAAAAA);
-        context.drawTextWithShadow(this.textRenderer,
-                "Штрихи: " + canvas.getStrokeCount() + ", Точки: " + canvas.getTotalPointCount(), 10, 105, 0xFFAAAAAA);
-        context.drawTextWithShadow(this.textRenderer,
-                "Колесо мыши - размер кисти: " + String.format("%.1f", brush.getLineWidth()), 10, 120, 0xFFAAAAAA);
+        context.drawTextWithShadow(this.textRenderer,Text.translatable("gui.screendraw.alt"), 10, 70, 0xFFFFFFFF);
 
-        // Размер кисти в правом верхнем углу
-        String brushSize = "Кисть: " + String.format("%.1f", brush.getLineWidth());
-        int textWidth = this.textRenderer.getWidth(brushSize);
-        context.drawTextWithShadow(this.textRenderer, brushSize,
-                this.width - textWidth - 10, 10, 0xFFFFFF00);
+        context.drawTextWithShadow(
+                this.textRenderer,
+                Text.translatable(
+                        "gui.screendraw.brush_size",
+                        String.format("%.1f", brush.getLineWidth())
+                ),
+                10, 85, 0xFFAAAAAA
+        );
 
-        // Текущий цвет кисти в правом верхнем углу с анимированным индикатором
-        String colorInfo = "Цвет: " + String.format("#%08X", brush.getColor());
-        int colorTextWidth = this.textRenderer.getWidth(colorInfo);
-        context.drawTextWithShadow(this.textRenderer, colorInfo,
-                this.width - colorTextWidth - 10, 25, brush.getColor());
 
-        // Анимированный индикатор цвета (маленький квадратик с пульсацией)
+        Text brushSizeText = Text.translatable(
+                "gui.screendraw.brush_size",
+                String.format("%.1f", brush.getLineWidth())
+        );
+        int textWidth = this.textRenderer.getWidth(brushSizeText);
+        context.drawTextWithShadow(
+                this.textRenderer,
+                brushSizeText,
+                this.width - textWidth - 10,
+                10,
+                0xFFFFFF00
+        );
+
+        Text colorInfoText = Text.translatable(
+                "gui.screendraw.brush_color",
+                String.format("#%08X", brush.getColor())
+        );
+        int colorTextWidth = this.textRenderer.getWidth(colorInfoText);
+        context.drawTextWithShadow(
+                this.textRenderer,
+                colorInfoText,
+                this.width - colorTextWidth - 10,
+                25,
+                brush.getColor()
+        );
+
+
         renderAnimatedColorIndicator(context, brush.getColor(),
                 this.width - colorTextWidth - 25, 25, 10);
     }
 
-    /**
-     * Рендерит анимированный индикатор текущего цвета
-     */
+
     private void renderAnimatedColorIndicator(DrawContext context, int color, int x, int y, int size) {
         MatrixStack matrixStack = context.getMatrices();
         matrixStack.push();
 
-        // Перемещаемся к позиции рендеринга
         matrixStack.translate(x, y, 0);
 
-        // Черная рамка
         context.fill(-1, -1, size + 1, size + 1, 0xFF000000);
 
-        // Цвет кисти
         context.fill(0, 0, size, size, color);
 
         matrixStack.pop();
@@ -159,16 +160,14 @@ public class DrawingScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        boolean altPressed = (modifiers & 4) != 0;   // GLFW_MOD_ALT = 4
-        boolean ctrlPressed = (modifiers & 2) != 0;  // GLFW_MOD_CONTROL = 2
+        boolean altPressed = (modifiers & 4) != 0;
+        boolean ctrlPressed = (modifiers & 2) != 0;
 
-        // Показываем палитру при нажатии Alt
         if (altPressed && !canvas.getColorPicker().isVisible()) {
             canvas.getColorPicker().show();
             return true;
         }
 
-        // Обработка Ctrl+Z и Ctrl+Y
         if (ctrlPressed) {
             if (keyCode == 90) { // Z
                 canvas.undo();
@@ -179,7 +178,6 @@ public class DrawingScreen extends Screen {
             }
         }
 
-        // Дополнительные клавиши
         return switch (keyCode) {
             case 67 -> { // C
                 canvas.clear();
@@ -195,8 +193,7 @@ public class DrawingScreen extends Screen {
 
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        // Скрываем палитру при отпускании любой клавиши Alt
-        if (keyCode == 342 || keyCode == 346) { // Left Alt или Right Alt
+        if (keyCode == 342 || keyCode == 346) {
             if (canvas.getColorPicker().isVisible()) {
                 canvas.getColorPicker().hide();
                 return true;
@@ -207,11 +204,10 @@ public class DrawingScreen extends Screen {
 
     @Override
     public boolean shouldPause() {
-        return false; // Не ставим игру на паузу
+        return false;
     }
 
     @Override
     public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Пустая реализация для прозрачного фона
     }
 }
