@@ -23,12 +23,12 @@ public class StrokeRenderer {
 
         for (Stroke stroke : strokes) {
             if (!stroke.isEmpty()) {
-                renderStroke(builder, matrix, stroke.getPoints());
+                renderStroke(builder, matrix, stroke.getPointsView());
             }
         }
 
         if (currentStroke != null && !currentStroke.isEmpty()) {
-            renderStroke(builder, matrix, currentStroke.getPoints());
+            renderStroke(builder, matrix, currentStroke.getPointsView());
         }
 
         BufferRenderer.drawWithGlobalProgram(builder.end());
@@ -43,6 +43,9 @@ public class StrokeRenderer {
             float pointSize = point.size();
 
             int alpha = (color >>> 24) & 0xFF;
+            if (alpha == 0) {
+                continue;
+            }
             int red = (color >>> 16) & 0xFF;
             int green = (color >>> 8) & 0xFF;
             int blue = color & 0xFF;

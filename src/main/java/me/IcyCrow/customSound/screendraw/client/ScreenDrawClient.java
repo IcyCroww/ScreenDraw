@@ -28,7 +28,11 @@ public class ScreenDrawClient implements ClientModInitializer {
     private void onTick(MinecraftClient minecraftClient) {
         while (openDrawingScreenKey.wasPressed()) {
             if (minecraftClient.player != null) {
-                minecraftClient.setScreen(new DrawingScreen());
+                if (minecraftClient.currentScreen instanceof DrawingScreen) {
+                    minecraftClient.setScreen(null);
+                } else {
+                    minecraftClient.setScreen(new DrawingScreen());
+                }
             }
         }
     }

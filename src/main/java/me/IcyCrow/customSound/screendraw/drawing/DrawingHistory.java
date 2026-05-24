@@ -1,21 +1,17 @@
 package me.IcyCrow.customSound.screendraw.drawing;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
-import java.util.Stack;
 
 public class DrawingHistory {
-    private final Stack<List<Stroke>> undoHistory = new Stack<>();
-    private final Stack<List<Stroke>> redoHistory = new Stack<>();
+    private final Deque<List<Stroke>> undoHistory = new ArrayDeque<>();
+    private final Deque<List<Stroke>> redoHistory = new ArrayDeque<>();
     private static final int MAX_HISTORY = 50;
 
-
     public void saveState(List<Stroke> currentStrokes) {
-        List<Stroke> stateCopy = new ArrayList<>();
-        for (Stroke stroke : currentStrokes) {
-            stateCopy.add(stroke.copy());
-        }
-        undoHistory.push(stateCopy);
+        undoHistory.addLast(copyStrokes(currentStrokes));
 
         if (undoHistory.size() > MAX_HISTORY) {
             undoHistory.removeFirst();
@@ -26,26 +22,16 @@ public class DrawingHistory {
 
     public List<Stroke> undo(List<Stroke> currentStrokes) {
         if (!undoHistory.isEmpty()) {
-            List<Stroke> currentState = new ArrayList<>();
-            for (Stroke stroke : currentStrokes) {
-                currentState.add(stroke.copy());
-            }
-            redoHistory.push(currentState);
-
-            return undoHistory.pop();
+            redoHistory.addLast(copyStrokes(currentStrokes));
+            return undoHistory.removeLast();
         }
         return currentStrokes;
     }
 
     public List<Stroke> redo(List<Stroke> currentStrokes) {
         if (!redoHistory.isEmpty()) {
-            List<Stroke> currentState = new ArrayList<>();
-            for (Stroke stroke : currentStrokes) {
-                currentState.add(stroke.copy());
-            }
-            undoHistory.push(currentState);
-
-            return redoHistory.pop();
+            undoHistory.addLast(copyStrokes(currentStrokes));
+            return redoHistory.removeLast();
         }
         return currentStrokes;
     }
@@ -62,7 +48,6 @@ public class DrawingHistory {
         return undoHistory.size();
     }
 
-
     public int getMaxHistorySize() {
         return MAX_HISTORY;
     }
@@ -70,5 +55,13 @@ public class DrawingHistory {
     public void clear() {
         undoHistory.clear();
         redoHistory.clear();
+    }
+
+    private static List<Stroke> copyStrokes(List<Stroke> strokes) {
+        List<Stroke> stateCopy = new ArrayList<>();
+        for (Stroke stroke : strokes) {
+            stateCopy.add(stroke.copy());
+        }
+        return stateCopy;
     }
 }

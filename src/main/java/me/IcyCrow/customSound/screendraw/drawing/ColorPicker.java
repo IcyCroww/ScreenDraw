@@ -2,12 +2,16 @@ package me.IcyCrow.customSound.screendraw.drawing;
 
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RotationAxis;
-
-import java.util.Arrays;
 
 public class ColorPicker {
+    private static final int[] PALETTE_COLORS = {
+            0xFF000000, 0xFF7F7F7F, 0xFFC3C3C3, 0xFF880015,
+            0xFFED1C24, 0xFFB97A57, 0xFFFF7F27, 0xFFB5E61D,
+            0xFFFFC90E, 0xFFFFF200, 0xFFEFE4B0, 0xFF22B14C,
+            0xFF3F48CC, 0xFF00A2E8, 0xFFA349A4, 0xFF7092BE,
+            0xFF99D9EA, 0xFFC8BFE7, 0xFFFFAEC9, 0xFFFFFFFF
+    };
+
     private int centerX;
     private int centerY;
     private final int squareSize;
@@ -19,24 +23,16 @@ public class ColorPicker {
 
     private boolean shouldShow = false;
     private float showAnimation = 0.0f;
-    private static final int SHOW_ANIMATION_DURATION = 8; // тиков
+    private static final int SHOW_ANIMATION_DURATION = 8;
 
     private float selectionAnimation = 0.0f;
-    private static final int SELECTION_ANIMATION_DURATION = 10; // тиков
+    private static final int SELECTION_ANIMATION_DURATION = 10;
 
     private int hoveredIndex = -1;
-    private float[] hoverAnimations = new float[PALETTE_COLORS.length];
-    private static final int HOVER_ANIMATION_DURATION = 6; // тиков
+    private final float[] hoverAnimations = new float[PALETTE_COLORS.length];
+    private static final int HOVER_ANIMATION_DURATION = 6;
 
     private float pulseAnimation = 0.0f;
-
-    private static final int[] PALETTE_COLORS = {
-            0xFF000000, 0xFF7F7F7F, 0xFFC3C3C3, 0xFF880015,
-            0xFFED1C24, 0xFFB97A57, 0xFFFF7F27, 0xFFB5E61D,
-            0xFFFFC90E, 0xFFFFF200, 0xFFEFE4B0, 0xFF22B14C,
-            0xFF3F48CC, 0xFF00A2E8, 0xFFA349A4, 0xFF7092BE,
-            0xFF99D9EA, 0xFFC8BFE7, 0xFFFFAEC9, 0xFFFFFFFF
-    };
 
     public ColorPicker(int centerX, int centerY) {
         this(centerX, centerY, 24, 120);
@@ -47,9 +43,8 @@ public class ColorPicker {
         this.centerY = centerY;
         this.squareSize = squareSize;
         this.radius = radius;
-
         this.visible = false;
-        this.selectedColor = 0xFFFFFFFF; // белый по умолчанию
+        this.selectedColor = 0xFFFFFFFF;
         this.selectedIndex = -1;
     }
 
@@ -111,7 +106,6 @@ public class ColorPicker {
             return;
         }
 
-        int oldHoveredIndex = hoveredIndex;
         hoveredIndex = -1;
 
         for (int i = 0; i < PALETTE_COLORS.length; i++) {
@@ -130,7 +124,9 @@ public class ColorPicker {
     }
 
     public boolean handleMouseClick(double mouseX, double mouseY) {
-        if (!isVisible()) return false;
+        if (!isVisible()) {
+            return false;
+        }
 
         for (int i = 0; i < PALETTE_COLORS.length; i++) {
             double angle = 2 * Math.PI * i / PALETTE_COLORS.length;
@@ -151,18 +147,17 @@ public class ColorPicker {
     }
 
     public void render(DrawContext context) {
-        if (showAnimation <= 0.0f) return;
+        if (showAnimation <= 0.0f) {
+            return;
+        }
 
         MatrixStack matrixStack = context.getMatrices();
-
         matrixStack.push();
-
         matrixStack.translate(centerX, centerY, 0);
 
         float showProgress = smoothStep(showAnimation);
         float scale = 0.3f + 0.7f * showProgress;
         matrixStack.scale(scale, scale, 1.0f);
-
         matrixStack.translate(-centerX, -centerY, 0);
 
         for (int i = 0; i < PALETTE_COLORS.length; i++) {
@@ -171,8 +166,6 @@ public class ColorPicker {
             double angle = 2 * Math.PI * i / PALETTE_COLORS.length;
             double cx = centerX + Math.cos(angle) * radius;
             double cy = centerY + Math.sin(angle) * radius;
-            int x = (int) Math.round(cx - squareSize / 2.0);
-            int y = (int) Math.round(cy - squareSize / 2.0);
             int color = PALETTE_COLORS[i];
 
             matrixStack.translate(cx, cy, 0);
@@ -191,7 +184,6 @@ public class ColorPicker {
 
             float totalScale = hoverScale * selectionScale;
             matrixStack.scale(totalScale, totalScale, 1.0f);
-
             matrixStack.translate(-squareSize / 2.0, -squareSize / 2.0, 0);
 
             if (i == selectedIndex) {
@@ -207,7 +199,6 @@ public class ColorPicker {
             }
 
             fillRect(context, 0, 0, squareSize, squareSize, color);
-
             context.drawBorder(0, 0, squareSize, squareSize, 0xFF000000);
 
             matrixStack.pop();
@@ -221,8 +212,12 @@ public class ColorPicker {
     }
 
     private static float smoothStep(float x) {
-        if (x <= 0.0f) return 0.0f;
-        if (x >= 1.0f) return 1.0f;
+        if (x <= 0.0f) {
+            return 0.0f;
+        }
+        if (x >= 1.0f) {
+            return 1.0f;
+        }
         return x * x * (3.0f - 2.0f * x);
     }
 
@@ -232,7 +227,7 @@ public class ColorPicker {
     public void setSelectedColor(int color) {
         this.selectedColor = color;
         for (int i = 0; i < PALETTE_COLORS.length; i++) {
-            if (PALETTE_COLORS[i] == color) {
+            if ((PALETTE_COLORS[i] & 0x00FFFFFF) == (color & 0x00FFFFFF)) {
                 selectedIndex = i;
                 return;
             }
@@ -241,7 +236,9 @@ public class ColorPicker {
     }
 
     public boolean isPointInside(double mouseX, double mouseY) {
-        if (showAnimation <= 0.0f) return false;
+        if (showAnimation <= 0.0f) {
+            return false;
+        }
         double dx = mouseX - centerX;
         double dy = mouseY - centerY;
         double distance = Math.sqrt(dx * dx + dy * dy);
@@ -251,7 +248,9 @@ public class ColorPicker {
 
     public static int getPaletteSize() { return PALETTE_COLORS.length; }
     public static int getColorByIndex(int index) {
-        if (index >= 0 && index < PALETTE_COLORS.length) return PALETTE_COLORS[index];
+        if (index >= 0 && index < PALETTE_COLORS.length) {
+            return PALETTE_COLORS[index];
+        }
         return 0xFFFFFFFF;
     }
 }

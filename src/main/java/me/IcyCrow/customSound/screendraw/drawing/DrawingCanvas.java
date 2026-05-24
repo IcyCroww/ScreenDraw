@@ -1,6 +1,7 @@
 package me.IcyCrow.customSound.screendraw.drawing;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class DrawingCanvas {
@@ -9,7 +10,7 @@ public class DrawingCanvas {
     private final List<Point> currentBezierPoints;
     private final DrawingHistory history;
     private final BrushSettings brushSettings;
-    private ColorPicker colorPicker; // больше не final
+    private ColorPicker colorPicker;
 
     private boolean isDrawing;
     private int lastMouseX = -1;
@@ -36,31 +37,52 @@ public class DrawingCanvas {
             return;
         }
 
-        if (!isDrawing && !colorPicker.isVisible()) {
-            history.saveState(strokes);
-
-            isDrawing = true;
-            lastMouseX = mouseX;
-            lastMouseY = mouseY;
-
-            currentStroke = new Stroke();
-            currentBezierPoints.clear();
-            currentBezierPoints.add(new Point(mouseX, mouseY));
-
-            currentStroke.addPoint(new DrawPoint(mouseX, mouseY,
-                    brushSettings.getColor(),
-                    brushSettings.getLineWidth()));
+        if (isDrawing || colorPicker.isVisible()) {
+            return;
         }
+
+        history.saveState(strokes);
+        isDrawing = true;
+        lastMouseX = mouseX;
+        lastMouseY = mouseY;
+
+        if (brushSettings.isEraserSelected()) {
+            currentStroke = null;
+            eraseAt(mouseX, mouseY);
+            return;
+        }
+
+        currentStroke = new Stroke();
+        currentBezierPoints.clear();
+        currentBezierPoints.add(new Point(mouseX, mouseY));
+
+        currentStroke.addPoint(new DrawPoint(
+                mouseX,
+                mouseY,
+                brushSettings.getEffectiveColor(),
+                brushSettings.getLineWidth()
+        ));
     }
 
     public void continueStroke(int mouseX, int mouseY) {
-        if (isDrawing && currentStroke != null && !colorPicker.isVisible()) {
+        if (!isDrawing || colorPicker.isVisible()) {
+            return;
+        }
+
+        if (brushSettings.isEraserSelected()) {
+            eraseBetween(lastMouseX, lastMouseY, mouseX, mouseY);
+            lastMouseX = mouseX;
+            lastMouseY = mouseY;
+            return;
+        }
+
+        if (currentStroke != null) {
             currentBezierPoints.add(new Point(mouseX, mouseY));
 
             if (lastMouseX != -1 && lastMouseY != -1) {
                 List<DrawPoint> interpolatedPoints = Stroke.interpolatePoints(
                         lastMouseX, lastMouseY, mouseX, mouseY,
-                        brushSettings.getColor(), brushSettings.getLineWidth()
+                        brushSettings.getEffectiveColor(), brushSettings.getLineWidth()
                 );
                 currentStroke.addPoints(interpolatedPoints);
             }
@@ -71,27 +93,32 @@ public class DrawingCanvas {
     }
 
     public void endStroke() {
-        if (isDrawing && currentStroke != null) {
-            isDrawing = false;
+        if (!isDrawing) {
+            return;
+        }
 
+        isDrawing = false;
+
+        if (currentStroke != null) {
             if (brushSettings.isSmoothingEnabled() && currentBezierPoints.size() > 2) {
-                Stroke smoothedStroke = BezierSmoother.smoothStroke(currentBezierPoints, brushSettings);
-                currentStroke = smoothedStroke;
+                currentStroke = BezierSmoother.smoothStroke(currentBezierPoints, brushSettings);
             }
 
             if (!currentStroke.isEmpty()) {
                 currentStroke.complete();
                 strokes.add(currentStroke);
             }
-
-            currentStroke = null;
-            currentBezierPoints.clear();
-            lastMouseX = -1;
-            lastMouseY = -1;
         }
+
+        currentStroke = null;
+        currentBezierPoints.clear();
+        lastMouseX = -1;
+        lastMouseY = -1;
     }
 
-    public void toggleColorPicker() { colorPicker.toggle(); }
+    public void toggleColorPicker() {
+        colorPicker.toggle();
+    }
 
     public void updateColorPickerPosition(int screenWidth, int screenHeight) {
         int cx = screenWidth / 2;
@@ -103,32 +130,71 @@ public class DrawingCanvas {
         }
     }
 
-    public void undo() {
+    public boolean undo() {
+        if (!history.canUndo()) {
+            return false;
+        }
         List<Stroke> newStrokes = history.undo(strokes);
         strokes.clear();
         strokes.addAll(newStrokes);
+        return true;
     }
 
-    public void redo() {
+    public boolean redo() {
+        if (!history.canRedo()) {
+            return false;
+        }
         List<Stroke> newStrokes = history.redo(strokes);
         strokes.clear();
         strokes.addAll(newStrokes);
+        return true;
     }
 
-    public void clear() {
+    public boolean clear() {
+        if (strokes.isEmpty() && (currentStroke == null || currentStroke.isEmpty())) {
+            return false;
+        }
         history.saveState(strokes);
         strokes.clear();
         if (currentStroke != null) {
             currentStroke.clear();
         }
+        return true;
+    }
+
+    public void replaceStrokes(List<Stroke> newStrokes, boolean saveHistory) {
+        if (saveHistory) {
+            history.saveState(strokes);
+        }
+        strokes.clear();
+        for (Stroke stroke : newStrokes) {
+            strokes.add(stroke.copy());
+        }
+        currentStroke = null;
+        currentBezierPoints.clear();
+        isDrawing = false;
+        lastMouseX = -1;
+        lastMouseY = -1;
     }
 
     public boolean adjustBrushSize(float delta) {
         return brushSettings.adjustSize(delta);
     }
 
+    public boolean adjustOpacity(float delta) {
+        return brushSettings.adjustOpacity(delta);
+    }
+
     public void toggleSmoothing() {
         brushSettings.toggleSmoothing();
+    }
+
+    public void setToolMode(ToolMode toolMode) {
+        brushSettings.setToolMode(toolMode);
+    }
+
+    public void toggleToolMode() {
+        brushSettings.toggleToolMode();
     }
 
     public int getTotalPointCount() {
@@ -140,6 +206,27 @@ public class DrawingCanvas {
             total += currentStroke.getPointCount();
         }
         return total;
+    }
+
+    private void eraseBetween(int x1, int y1, int x2, int y2) {
+        List<DrawPoint> points = Stroke.interpolatePoints(
+                x1, y1, x2, y2, 0xFFFFFFFF, Math.max(1.0f, brushSettings.getLineWidth())
+        );
+        for (DrawPoint point : points) {
+            eraseAt(point.x(), point.y());
+        }
+    }
+
+    private void eraseAt(int mouseX, int mouseY) {
+        float radius = Math.max(2.0f, brushSettings.getLineWidth());
+        Iterator<Stroke> iterator = strokes.iterator();
+        while (iterator.hasNext()) {
+            Stroke stroke = iterator.next();
+            stroke.erasePointsNear(mouseX, mouseY, radius);
+            if (stroke.isEmpty()) {
+                iterator.remove();
+            }
+        }
     }
 
     public List<Stroke> getStrokes() { return strokes; }

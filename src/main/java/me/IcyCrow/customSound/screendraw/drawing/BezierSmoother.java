@@ -12,7 +12,7 @@ public class BezierSmoother {
             Stroke stroke = new Stroke();
             for (Point point : controlPoints) {
                 stroke.addPoint(new DrawPoint((int) point.x(), (int) point.y(),
-                        brushSettings.getColor(), brushSettings.getLineWidth()));
+                        brushSettings.getEffectiveColor(), brushSettings.getLineWidth()));
             }
             return stroke;
         }
@@ -24,7 +24,7 @@ public class BezierSmoother {
 
             Point firstPoint = smoothedPoints.getFirst();
             DrawPoint lastDrawPoint = new DrawPoint((int) firstPoint.x(), (int) firstPoint.y(),
-                    brushSettings.getColor(), brushSettings.getLineWidth());
+                    brushSettings.getEffectiveColor(), brushSettings.getLineWidth());
             smoothedStroke.addPoint(lastDrawPoint);
 
             for (int i = 1; i < smoothedPoints.size(); i++) {
@@ -34,11 +34,11 @@ public class BezierSmoother {
 
                 List<DrawPoint> interpolatedPoints = Stroke.interpolatePoints(
                         lastDrawPoint.x(), lastDrawPoint.y(), newX, newY,
-                        brushSettings.getColor(), brushSettings.getLineWidth()
+                        brushSettings.getEffectiveColor(), brushSettings.getLineWidth()
                 );
 
                 smoothedStroke.addPoints(interpolatedPoints);
-                lastDrawPoint = new DrawPoint(newX, newY, brushSettings.getColor(), brushSettings.getLineWidth());
+                lastDrawPoint = new DrawPoint(newX, newY, brushSettings.getEffectiveColor(), brushSettings.getLineWidth());
             }
         }
 

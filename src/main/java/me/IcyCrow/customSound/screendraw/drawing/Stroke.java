@@ -1,6 +1,8 @@
 package me.IcyCrow.customSound.screendraw.drawing;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 public class Stroke {
@@ -46,6 +48,22 @@ public class Stroke {
         }
     }
 
+    public boolean erasePointsNear(int x, int y, float radius) {
+        boolean changed = false;
+        Iterator<DrawPoint> iterator = points.iterator();
+        while (iterator.hasNext()) {
+            DrawPoint point = iterator.next();
+            float eraseRadius = radius + point.size() / 2.0f;
+            float dx = point.x() - x;
+            float dy = point.y() - y;
+            if (dx * dx + dy * dy <= eraseRadius * eraseRadius) {
+                iterator.remove();
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
     public static List<DrawPoint> interpolatePoints(int x1, int y1, int x2, int y2, int color, float size) {
         List<DrawPoint> interpolated = new ArrayList<>();
 
@@ -63,6 +81,7 @@ public class Stroke {
     }
 
     public List<DrawPoint> getPoints() { return new ArrayList<>(points); }
+    public List<DrawPoint> getPointsView() { return Collections.unmodifiableList(points); }
     public int getPointCount() { return points.size(); }
     public boolean isCompleted() { return completed; }
     public boolean isEmpty() { return points.isEmpty(); }
@@ -80,5 +99,9 @@ public class Stroke {
         copy.points.addAll(this.points);
         copy.completed = this.completed;
         return copy;
+    }
+
+    public static Stroke completed(List<DrawPoint> points) {
+        return new Stroke(points);
     }
 }

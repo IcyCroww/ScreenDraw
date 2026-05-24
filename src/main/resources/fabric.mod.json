@@ -3,7 +3,7 @@
   "id": "screendraw",
   "version": "${version}",
   "name": "ScreenDraw",
-  "description": "",
+  "description": "Client-side overlay for drawing, annotating, saving, and exporting sketches directly on the Minecraft screen.",
   "authors": ["IcyCrow", "Padej_"],
   "contact": {},
   "license": "All-Rights-Reserved",
