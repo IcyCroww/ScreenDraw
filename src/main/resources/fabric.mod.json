@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "screendraw_1_21_9",
+  "version": "${version}",
+  "name": "ScreenDraw 1.21.9",
+  "description": "Client-side overlay for drawing, annotating, saving, and exporting sketches directly on the Minecraft screen.",
+  "authors": ["IcyCrow", "Padej_"],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/screendraw/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "me.IcyCrow.customSound.screendraw.client.ScreenDrawClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
