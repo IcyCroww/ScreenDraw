@@ -1,0 +1,160 @@
+plugins {
+    id 'net.fabricmc.fabric-loom' version '1.16.2'
+    id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    // Loom adds the Fabric and Minecraft repositories needed for the toolchain.
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+}
+
+processResources {
+    inputs.property "version", project.version
+    inputs.property "minecraft_version", project.minecraft_version
+    inputs.property "loader_version", project.loader_version
+    filteringCharset "UTF-8"
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version,
+                "minecraft_version": project.minecraft_version,
+                "loader_version": project.loader_version
+    }
+}
+
+def targetJavaVersion = 25
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = "UTF-8"
+    it.options.release.set(targetJavaVersion)
+}
+
+java {
+    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
+    if (JavaVersion.current() < javaVersion) {
+        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    }
+    withSourcesJar()
+}
+
+jar {
+    from("LICENSE.txt") {
+        rename { "${it}_${base.archivesName.get()}" }
+    }
+}
+
+publishing {
+    publications {
+        create("mavenJava", MavenPublication) {
+            artifactId = project.archives_base_name
+            from components.java
+        }
+    }
+
+    repositories {
+    }
+}
+
+def repairLoomLaunchConfig = {
+    def launchConfig = file(".gradle/loom-cache/launch.cfg")
+    if (!launchConfig.isFile()) {
+        return
+    }
+
+    def loomCache = file(".gradle/loom-cache").toPath().toAbsolutePath().normalize().toString().replace(File.separatorChar, '/' as char)
+    def projectLoomCache = "${projectDir.toPath().toAbsolutePath().normalize().toString().replace(File.separatorChar, '/' as char)}/.gradle/loom-cache"
+    def fixedLaunchConfig = file(".gradle/loom-cache/launch-fixed.cfg")
+    def authArgs = [
+            "\t--username",
+            "\tDev",
+            "\t--uuid",
+            "\t00000000-0000-0000-0000-000000000000",
+            "\t--accessToken",
+            "\t0",
+            "\t--userType",
+            "\tlegacy"
+    ]
+    def authKeys = ["--username", "--uuid", "--accessToken", "--userType"] as Set
+
+    def lines = launchConfig.readLines("UTF-8")
+    def repairedLines = lines.collect { line ->
+        def trimmed = line.trim()
+        if (trimmed.startsWith("fabric.remapClasspathFile=")) {
+            return "\tfabric.remapClasspathFile=${loomCache}/remapClasspath.txt"
+        }
+        if (trimmed.startsWith("log4j.configurationFile=")) {
+            return "\tlog4j.configurationFile=${loomCache}/log4j.xml"
+        }
+        return line
+    }
+
+    launchConfig.setText(repairedLines.join(System.lineSeparator()) + System.lineSeparator(), "UTF-8")
+
+    def skipNext = false
+    def fixedLines = []
+    repairedLines.each { line ->
+        def trimmed = line.trim()
+        if (skipNext) {
+            skipNext = false
+            return
+        }
+        if (authKeys.contains(trimmed)) {
+            skipNext = true
+            return
+        }
+        if (trimmed.startsWith("fabric.remapClasspathFile=")) {
+            fixedLines.add("\tfabric.remapClasspathFile=${projectLoomCache}/remapClasspath.txt")
+            return
+        }
+        if (trimmed.startsWith("log4j.configurationFile=")) {
+            fixedLines.add("\tlog4j.configurationFile=${projectLoomCache}/log4j.xml")
+            return
+        }
+        fixedLines.add(line)
+        if (trimmed == "clientArgs") {
+            fixedLines.addAll(authArgs)
+        }
+    }
+    fixedLaunchConfig.setText(fixedLines.join(System.lineSeparator()) + System.lineSeparator(), "UTF-8")
+}
+
+gradle.projectsEvaluated {
+    repairLoomLaunchConfig()
+}
+
+gradle.taskGraph.whenReady {
+    repairLoomLaunchConfig()
+}
+
+tasks.register("repairLoomLaunchConfig") {
+    doLast {
+        repairLoomLaunchConfig()
+    }
+}
+
+tasks.withType(JavaExec).configureEach {
+    doFirst {
+        repairLoomLaunchConfig()
+    }
+}
+
+tasks.matching { it.name in ["runClient", "runServer"] }.configureEach {
+    doFirst {
+        repairLoomLaunchConfig()
+    }
+}
+
+tasks.named("build") {
+    finalizedBy("repairLoomLaunchConfig")
+}
